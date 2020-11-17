@@ -76,6 +76,9 @@
         "phpstan": [
             "@php ./vendor/bin/phpstan analyse"
         ],
+        "test": [
+            "./vendor/bin/phpunit --colors=always tests/Unit"
+        ],
         "php-cs-fixer": [
             "@php artisan fixer:fix"
         ],

@@ -2,6 +2,7 @@
 
 namespace App\Models\Users;
 
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\Users\VerifyEmail;
 use Illuminate\Notifications\Notifiable;
@@ -121,6 +122,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getHasVerifiedEmailAttribute(): bool
     {
         return $this->hasVerifiedEmail();
+    }
+
+    public function generatePassword(): string
+    {
+        return Str::random(10);
     }
 
     /**

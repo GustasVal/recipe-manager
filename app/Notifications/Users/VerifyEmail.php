@@ -2,39 +2,55 @@
 
 namespace App\Notifications\Users;
 
+use App\Models\Users\User;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Auth\Notifications\VerifyEmail as BaseVerifyEmail;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Notifications\Notification;
 
-class VerifyEmail extends BaseVerifyEmail
+class VerifyEmail extends Notification
 {
-    /**
-     * Build the mail representation of the notification.
-     *
-     * @param  \App\Models\Users\User  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
-    public function toMail($notifiable)
+    protected $baseEmail;
+
+    public function __construct()
+    {
+        $this->baseEmail = new BaseVerifyEmail();
+    }
+
+    public function setBaseEmail(BaseVerifyEmail $baseEmail): void
+    {
+        $this->baseEmail = $baseEmail;
+    }
+
+    public function via($notifiable)
+    {
+        return ['mail'];
+    }
+
+    public function toMail(User $notifiable)
     {
         if ($notifiable->exists) {
-            return parent::toMail($notifiable);
+            return $this->baseEmail->toMail($notifiable);
         }
 
-        $password = \Str::random(10);
-        $notifiable->password = \Hash::make($password);
+        $password = $notifiable->generatePassword();
+        $notifiable->password = Hash::make($password);
         $notifiable->save();
         $notifiable->markEmailAsVerified();
 
-        $loginUrl = route('login');
+        $loginUrl = URL::route('login');
 
         // This is mainly a phpstan fix
-        $subject = !is_array(\Lang::get('Account created')) ? \Lang::get('Account created') : 'Account created';
-        $action = !is_array(\Lang::get('Login')) ? \Lang::get('Login') : 'Login';
+        $subject = !is_array(Lang::get('Account created')) ? Lang::get('Account created') : 'Account created';
+        $action = !is_array(Lang::get('Login')) ? Lang::get('Login') : 'Login';
 
         return (new MailMessage)
             ->subject($subject)
-            ->line(\Lang::get('A new account was created for you.'))
-            ->line(\Lang::get('Use the following password to login: :password', ['password' => $password]))
+            ->line(Lang::get('A new account was created for you.'))
+            ->line(Lang::get('Use the following password to login: :password', ['password' => $password]))
             ->action($action, $loginUrl)
-            ->line(\Lang::get('You should change your password after the first login.'));
+            ->line(Lang::get('You should change your password after the first login.'));
     }
 }
