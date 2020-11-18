@@ -21,15 +21,15 @@ class IngredientController extends Controller
     public function index(Request $request, Recipe $recipe)
     {
         $this->authorize([Ingredient::class, $recipe]);
-        $ingredients = $recipe
-            ->ingredients()
+        $ingredientsQuery = $recipe->ingredients()->getQuery();
+
+        $ingredients = $ingredientsQuery
             ->orderBy('ingredient_group_id')
             ->orderBy('position')
-            ->originalOnly()
             ->get();
 
         if ($request->grouped) {
-            return $ingredients->groupBy('ingredient_group_id');
+            return $ingredientsQuery->groupBy('ingredient_group_id')->get();
         }
 
         return $ingredients;
