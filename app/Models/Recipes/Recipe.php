@@ -7,6 +7,9 @@ use App\Models\SlugifyTrait;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use League\Flysystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Askedio\SoftCascade\Traits\SoftCascadeTrait;
@@ -90,6 +93,7 @@ class Recipe extends Model
         'instructions',
         'photos',
         'preparation_time',
+        'slug',
     ];
 
     /**
@@ -285,7 +289,7 @@ class Recipe extends Model
         }
 
         $extension = $photo->getClientOriginalExtension();
-        $uuid = \Str::uuid()->toString();
+        $uuid = $this->generatePhotoUuid();
         $name = "{$uuid}-{$this->slug}.{$extension}";
 
         $photo->storeAs("{$this->id}", $name, 'recipe_images');
@@ -299,6 +303,11 @@ class Recipe extends Model
         $this->update(['photos' => $photos]);
     }
 
+    public function generatePhotoUuid(): string
+    {
+        return Str::uuid()->toString();
+    }
+
     /**
      * Remove an existing photo
      *
@@ -307,14 +316,14 @@ class Recipe extends Model
      */
     public function removePhoto(string $photo): void
     {
-        $photos = collect($this->photos);
+        $photos = new Collection($this->photos);
         $index = $photos->search($photo);
         if ($index >= 0) {
             unset($photos[$index]);
             $this->update(['photos' => $photos->toArray()]);
         }
 
-        \Storage::disk('recipe_images')->delete("{$this->id}/{$photo}");
+        Storage::disk('recipe_images')->delete("{$this->id}/{$photo}");
     }
 
     /**
